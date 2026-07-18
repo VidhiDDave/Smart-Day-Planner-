@@ -8,9 +8,23 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var authViewModel = AuthViewModel()
     @StateObject private var plannerViewModel = PlannerViewModel()
 
     var body: some View {
+        Group {
+            if authViewModel.isAuthenticated {
+                mainTabView
+            } else {
+                AuthView(viewModel: authViewModel)
+            }
+        }
+        .task {
+            await authViewModel.restoreSession()
+        }
+    }
+
+    private var mainTabView: some View {
         TabView {
             TaskListView(viewModel: plannerViewModel)
                 .tabItem {
@@ -27,7 +41,7 @@ struct ContentView: View {
                     Label("Schedule", systemImage: "sparkles")
                 }
 
-            SettingsView()
+            SettingsView(authViewModel: authViewModel)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }

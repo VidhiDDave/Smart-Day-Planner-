@@ -4,40 +4,67 @@
 //
 //  Created by Vidhi Dave on 7/3/26.
 //
-
 import SwiftUI
 
 struct AuthView: View {
+    @ObservedObject var viewModel: AuthViewModel
+
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 28) {
+            Spacer()
+
             Image(systemName: "calendar.badge.clock")
-                .font(.system(size: 64))
+                .font(.system(size: 72))
                 .foregroundStyle(.blue)
 
-            VStack(spacing: 8) {
+            VStack(spacing: 10) {
                 Text("Smart Day Planner")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
-                Text("Plan your day with AI-powered scheduling.")
+                Text("Plan your day with AI-powered scheduling around your tasks and calendar.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
             }
 
             Button {
-                // Google Sign-In will be added later.
+                Task {
+                    await viewModel.signInWithGoogle()
+                }
             } label: {
-                Label("Sign in with Google", systemImage: "person.crop.circle.badge.checkmark")
-                    .frame(maxWidth: .infinity)
+                if viewModel.isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                } else {
+                    Label("Continue with Google", systemImage: "person.crop.circle.badge.checkmark")
+                        .frame(maxWidth: .infinity)
+                }
             }
             .buttonStyle(.borderedProminent)
+            .disabled(viewModel.isLoading)
             .padding(.horizontal)
+
+            Text("Google Sign-In is mocked for now. Real Supabase and Google authentication will be added in a later PR.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Spacer()
         }
         .padding()
     }
 }
 
 #Preview {
-    AuthView()
+    AuthView(viewModel: AuthViewModel())
 }

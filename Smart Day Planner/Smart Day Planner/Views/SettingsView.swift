@@ -8,16 +8,65 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @ObservedObject var authViewModel: AuthViewModel
+    @StateObject private var settingsViewModel = SettingsViewModel()
+
     var body: some View {
         NavigationStack {
             List {
                 Section("Account") {
-                    Label("Google Sign-In coming next", systemImage: "person.crop.circle")
-                    Label("Supabase sync coming next", systemImage: "externaldrive.connected.to.line.below")
+                    if let profile = authViewModel.userProfile {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(profile.fullName ?? "Signed In User")
+                                .font(.headline)
+
+                            Text(profile.email)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+
+                    Button(role: .destructive) {
+                        Task {
+                            await authViewModel.signOut()
+                        }
+                    } label: {
+                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
                 }
 
                 Section("Calendar") {
-                    Label("Optional Google Calendar connection", systemImage: "calendar.badge.plus")
+                    if settingsViewModel.isGoogleCalendarConnected {
+                        Label("Google Calendar connected", systemImage: "checkmark.circle.fill")
+
+                        Button("Disconnect Google Calendar") {
+                            Task {
+                                await settingsViewModel.disconnectGoogleCalendar()
+                            }
+                        }
+                    } else {
+                        Button {
+                            Task {
+                                await settingsViewModel.connectGoogleCalendar()
+                            }
+                        } label: {
+                            Label("Connect Google Calendar", systemImage: "calendar.badge.plus")
+                        }
+                    }
+
+                    if let errorMessage = settingsViewModel.errorMessage {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                Section("Backend") {
+                    Label("Supabase sync scaffold added", systemImage: "externaldrive.connected.to.line.below")
+                    Text("Task and calendar data are still local for now. Supabase persistence will be connected in a later PR.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section("About") {
@@ -32,5 +81,5 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView()
+    SettingsView(authViewModel: AuthViewModel())
 }
