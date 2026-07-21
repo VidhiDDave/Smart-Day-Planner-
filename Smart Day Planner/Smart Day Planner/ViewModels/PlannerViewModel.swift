@@ -8,19 +8,37 @@
 import Foundation
 import Combine
 
+@MainActor
 final class PlannerViewModel: ObservableObject {
     @Published var tasks: [TaskItem] = []
     @Published var calendarEvents: [CalendarEvent] = []
     @Published var optimizedSchedule: [ScheduledTask] = []
 
     @Published var scheduleMessage: String?
+    @Published var isLoadingTasks = false
 
-    // Temporary user ID until Google login + Supabase auth is added.
+    // Temporary user ID until real Google login + Supabase auth is added.
     // Later this will come from the logged-in Supabase user.
     let currentUserId = UUID()
 
     private let availabilityService = CalendarAvailabilityService()
     private let optimizer = ScheduleOptimizer()
+    private let supabaseService = SupabaseService()
+
+    func loadTasks() async {
+        guard supabaseService.isConfigured else {
+            return
+        }
+
+        isLoadingTasks = true
+        defer { isLoadingTasks = false }
+
+        do {
+            tasks = try await supabaseService.fetchTasks(for: currentUserId)
+        } catch {
+            scheduleMessage = "Unable to load tasks from Supabase. Using local tasks for now."
+        }
+    }
 
     func addTask(
         title: String,
@@ -41,11 +59,19 @@ final class PlannerViewModel: ObservableObject {
         )
 
         tasks.append(task)
+
+        Task {
+            await saveTaskToSupabaseIfConfigured(task)
+        }
     }
 
     func deleteTask(_ task: TaskItem) {
         tasks.removeAll { $0.id == task.id }
         optimizedSchedule.removeAll { $0.taskId == task.id }
+
+        Task {
+            await deleteTaskFromSupabaseIfConfigured(task)
+        }
     }
 
     func toggleTaskCompletion(_ task: TaskItem) {
@@ -54,6 +80,11 @@ final class PlannerViewModel: ObservableObject {
         }
 
         tasks[index].isCompleted.toggle()
+        let updatedTask = tasks[index]
+
+        Task {
+            await saveTaskToSupabaseIfConfigured(updatedTask)
+        }
     }
 
     func addCalendarEvent(
@@ -101,5 +132,29 @@ final class PlannerViewModel: ObservableObject {
     func clearSchedule() {
         optimizedSchedule.removeAll()
         scheduleMessage = nil
+    }
+
+    private func saveTaskToSupabaseIfConfigured(_ task: TaskItem) async {
+        guard supabaseService.isConfigured else {
+            return
+        }
+
+        do {
+            try await supabaseService.saveTask(task)
+        } catch {
+            scheduleMessage = "Task saved locally, but Supabase sync failed."
+        }
+    }
+
+    private func deleteTaskFromSupabaseIfConfigured(_ task: TaskItem) async {
+        guard supabaseService.isConfigured else {
+            return
+        }
+
+        do {
+            try await supabaseService.deleteTask(task)
+        } catch {
+            scheduleMessage = "Task deleted locally, but Supabase delete failed."
+        }
     }
 }

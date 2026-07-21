@@ -14,7 +14,9 @@ struct TaskListView: View {
     var body: some View {
         NavigationStack {
             List {
-                if viewModel.tasks.isEmpty {
+                if viewModel.isLoadingTasks {
+                    ProgressView("Loading tasks...")
+                } else if viewModel.tasks.isEmpty {
                     ContentUnavailableView(
                         "No Tasks Yet",
                         systemImage: "checklist",
@@ -40,34 +42,46 @@ struct TaskListView: View {
             .sheet(isPresented: $isShowingAddTask) {
                 AddTaskView(viewModel: viewModel)
             }
+            .task {
+                await viewModel.loadTasks()
+            }
         }
     }
 
     private func taskRow(_ task: TaskItem) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(task.title)
-                    .font(.headline)
+        Button {
+            viewModel.toggleTaskCompletion(task)
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(task.isCompleted ? .green : .secondary)
 
-                Spacer()
+                    Text(task.title)
+                        .font(.headline)
+                        .strikethrough(task.isCompleted)
 
-                Text(task.category.rawValue)
+                    Spacer()
+
+                    Text(task.category.rawValue)
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.thinMaterial)
+                        .clipShape(Capsule())
+                }
+
+                Text("\(task.durationMinutes) min • Priority \(task.priority) • Energy \(task.energyLevel)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Text("Due \(task.deadline.plannerTimeText)")
                     .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.thinMaterial)
-                    .clipShape(Capsule())
+                    .foregroundStyle(.secondary)
             }
-
-            Text("\(task.durationMinutes) min • Priority \(task.priority) • Energy \(task.energyLevel)")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Text("Due \(task.deadline.plannerTimeText)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
+        .buttonStyle(.plain)
     }
 
     private func deleteTasks(at offsets: IndexSet) {
