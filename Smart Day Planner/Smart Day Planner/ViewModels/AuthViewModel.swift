@@ -36,7 +36,13 @@ final class AuthViewModel: ObservableObject {
             let session = try await authService.signInWithGoogle()
             let profile = makeProfile(from: session)
 
-            try await supabaseService.upsertProfile(profile)
+            do {
+                try await supabaseService.upsertProfile(profile)
+            } catch {
+                // Supabase is not fully configured yet.
+                // Keep mock login working for now.
+                print("Supabase profile sync skipped: \(error.localizedDescription)")
+            }
 
             userProfile = profile
             isAuthenticated = true
@@ -47,7 +53,7 @@ final class AuthViewModel: ObservableObject {
 
         isLoading = false
     }
-
+    
     func signOut() async {
         await authService.signOut()
         userProfile = nil
