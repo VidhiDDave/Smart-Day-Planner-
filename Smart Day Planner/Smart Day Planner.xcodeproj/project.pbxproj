@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B1847CF6300F0A8A0061F79D /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = B1847CF5300F0A8A0061F79D /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B1847C042FF89ACE0061F79D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B1847CF6300F0A8A0061F79D /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 				B1847BF82FF89ACC0061F79D /* Smart Day Planner */,
 				B1847C062FF89ACE0061F79D /* Smart Day PlannerTests */,
 				B1847C102FF89ACE0061F79D /* Smart Day PlannerUITests */,
+				B1847CF4300F0A8A0061F79D /* Frameworks */,
 				B1847BF72FF89ACC0061F79D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,6 +96,13 @@
 				B1847C0D2FF89ACE0061F79D /* Smart Day PlannerUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		B1847CF4300F0A8A0061F79D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -112,6 +125,7 @@
 			);
 			name = "Smart Day Planner";
 			packageProductDependencies = (
+				B1847CF5300F0A8A0061F79D /* Supabase */,
 			);
 			productName = "Smart Day Planner";
 			productReference = B1847BF62FF89ACC0061F79D /* Smart Day Planner.app */;
@@ -196,6 +210,9 @@
 			);
 			mainGroup = B1847BED2FF89ACC0061F79D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B1847CF3300DAF820061F79D /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B1847BF72FF89ACC0061F79D /* Products */;
 			projectDirPath = "";
@@ -574,6 +591,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B1847CF3300DAF820061F79D /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B1847CF5300F0A8A0061F79D /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B1847CF3300DAF820061F79D /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B1847BEE2FF89ACC0061F79D /* Project object */;
 }
