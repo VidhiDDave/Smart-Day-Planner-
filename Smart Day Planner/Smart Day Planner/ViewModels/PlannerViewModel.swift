@@ -17,15 +17,35 @@ final class PlannerViewModel: ObservableObject {
     @Published var scheduleMessage: String?
     @Published var isLoadingTasks = false
 
-    // Temporary user ID until real Google login + Supabase auth is added.
-    // Later this will come from the logged-in Supabase user.
-    let currentUserId = UUID()
+    private var currentUserId: UUID?
 
     private let availabilityService = CalendarAvailabilityService()
     private let optimizer = ScheduleOptimizer()
     private let supabaseService = SupabaseService()
 
+    func configureUser(_ userId: UUID) {
+        guard currentUserId != userId else {
+            return
+        }
+
+        currentUserId = userId
+        clearPlannerData()
+
+        Task {
+            await loadTasks()
+        }
+    }
+
+    func clearUser() {
+        currentUserId = nil
+        clearPlannerData()
+    }
+
     func loadTasks() async {
+        guard let currentUserId else {
+            return
+        }
+
         guard supabaseService.isConfigured else {
             return
         }
@@ -48,6 +68,11 @@ final class PlannerViewModel: ObservableObject {
         energyLevel: Int,
         category: TaskCategory
     ) {
+        guard let currentUserId else {
+            scheduleMessage = "Please sign in before adding tasks."
+            return
+        }
+
         let task = TaskItem(
             userId: currentUserId,
             title: title,
@@ -92,6 +117,11 @@ final class PlannerViewModel: ObservableObject {
         startDate: Date,
         endDate: Date
     ) {
+        guard let currentUserId else {
+            scheduleMessage = "Please sign in before adding calendar blocks."
+            return
+        }
+
         guard endDate > startDate else {
             scheduleMessage = "Calendar event end time must be after the start time."
             return
@@ -132,6 +162,14 @@ final class PlannerViewModel: ObservableObject {
     func clearSchedule() {
         optimizedSchedule.removeAll()
         scheduleMessage = nil
+    }
+
+    private func clearPlannerData() {
+        tasks.removeAll()
+        calendarEvents.removeAll()
+        optimizedSchedule.removeAll()
+        scheduleMessage = nil
+        isLoadingTasks = false
     }
 
     private func saveTaskToSupabaseIfConfigured(_ task: TaskItem) async {
