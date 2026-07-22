@@ -21,6 +21,14 @@ struct ContentView: View {
         }
         .task {
             await authViewModel.restoreSession()
+            configurePlannerForCurrentUser()
+        }
+        .onChange(of: authViewModel.userProfile) { _, newProfile in
+            if let newProfile {
+                plannerViewModel.configureUser(newProfile.id)
+            } else {
+                plannerViewModel.clearUser()
+            }
         }
     }
 
@@ -45,6 +53,14 @@ struct ContentView: View {
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }
+        }
+    }
+
+    private func configurePlannerForCurrentUser() {
+        if let userId = authViewModel.userProfile?.id {
+            plannerViewModel.configureUser(userId)
+        } else {
+            plannerViewModel.clearUser()
         }
     }
 }

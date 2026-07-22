@@ -26,7 +26,7 @@ final class AuthService {
         // Temporary mock Google login.
         // Later this will use Google Sign-In and Supabase Auth.
         let session = AuthSession(
-            userId: UUID(),
+            userId: MockUser.demoUserId,
             email: "demo.user@gmail.com",
             fullName: "Demo User",
             avatarURL: nil
@@ -40,4 +40,8 @@ final class AuthService {
         // Real Supabase sign-out will be added later.
         currentSession = nil
     }
+}
+
+private enum MockUser {
+    static let demoUserId = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
 }
