@@ -14,7 +14,9 @@ struct CalendarBlocksView: View {
     var body: some View {
         NavigationStack {
             List {
-                if viewModel.calendarEvents.isEmpty {
+                if viewModel.isLoadingCalendarEvents {
+                    ProgressView("Loading calendar blocks...")
+                } else if viewModel.calendarEvents.isEmpty {
                     ContentUnavailableView(
                         "No Calendar Blocks",
                         systemImage: "calendar",
@@ -39,6 +41,9 @@ struct CalendarBlocksView: View {
             }
             .sheet(isPresented: $isShowingAddEvent) {
                 AddCalendarEventView(viewModel: viewModel)
+            }
+            .task {
+                await viewModel.loadCalendarEvents()
             }
         }
     }
@@ -71,6 +76,7 @@ struct CalendarBlocksView: View {
 
 #Preview {
     let viewModel = PlannerViewModel()
+    viewModel.configureUser(UUID())
     viewModel.addCalendarEvent(
         title: "Class",
         startDate: .todayAt(hour: 9),

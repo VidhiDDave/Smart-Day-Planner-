@@ -16,6 +16,7 @@ final class PlannerViewModel: ObservableObject {
 
     @Published var scheduleMessage: String?
     @Published var isLoadingTasks = false
+    @Published var isLoadingCalendarEvents = false
 
     private var currentUserId: UUID?
 
@@ -33,6 +34,7 @@ final class PlannerViewModel: ObservableObject {
 
         Task {
             await loadTasks()
+            await loadCalendarEvents()
         }
     }
 
@@ -57,6 +59,25 @@ final class PlannerViewModel: ObservableObject {
             tasks = try await supabaseService.fetchTasks(for: currentUserId)
         } catch {
             scheduleMessage = "Unable to load tasks from Supabase. Using local tasks for now."
+        }
+    }
+
+    func loadCalendarEvents() async {
+        guard let currentUserId else {
+            return
+        }
+
+        guard supabaseService.isConfigured else {
+            return
+        }
+
+        isLoadingCalendarEvents = true
+        defer { isLoadingCalendarEvents = false }
+
+        do {
+            calendarEvents = try await supabaseService.fetchCalendarEvents(for: currentUserId)
+        } catch {
+            scheduleMessage = "Unable to load calendar events from Supabase. Using local events for now."
         }
     }
 
@@ -135,10 +156,18 @@ final class PlannerViewModel: ObservableObject {
         )
 
         calendarEvents.append(event)
+
+        Task {
+            await saveCalendarEventToSupabaseIfConfigured(event)
+        }
     }
 
     func deleteCalendarEvent(_ event: CalendarEvent) {
         calendarEvents.removeAll { $0.id == event.id }
+
+        Task {
+            await deleteCalendarEventFromSupabaseIfConfigured(event)
+        }
     }
 
     func generateOptimizedSchedule() {
@@ -170,6 +199,7 @@ final class PlannerViewModel: ObservableObject {
         optimizedSchedule.removeAll()
         scheduleMessage = nil
         isLoadingTasks = false
+        isLoadingCalendarEvents = false
     }
 
     private func saveTaskToSupabaseIfConfigured(_ task: TaskItem) async {
@@ -193,6 +223,30 @@ final class PlannerViewModel: ObservableObject {
             try await supabaseService.deleteTask(task)
         } catch {
             scheduleMessage = "Task deleted locally, but Supabase delete failed."
+        }
+    }
+
+    private func saveCalendarEventToSupabaseIfConfigured(_ event: CalendarEvent) async {
+        guard supabaseService.isConfigured else {
+            return
+        }
+
+        do {
+            try await supabaseService.saveCalendarEvent(event)
+        } catch {
+            scheduleMessage = "Calendar block saved locally, but Supabase sync failed."
+        }
+    }
+
+    private func deleteCalendarEventFromSupabaseIfConfigured(_ event: CalendarEvent) async {
+        guard supabaseService.isConfigured else {
+            return
+        }
+
+        do {
+            try await supabaseService.deleteCalendarEvent(event)
+        } catch {
+            scheduleMessage = "Calendar block deleted locally, but Supabase delete failed."
         }
     }
 }

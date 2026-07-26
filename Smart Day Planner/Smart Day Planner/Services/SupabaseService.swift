@@ -117,20 +117,44 @@ final class SupabaseService {
     func fetchCalendarEvents(for userId: UUID) async throws -> [CalendarEvent] {
         try validateConfiguration()
 
-        // Real calendar event fetch will be added in a later PR.
-        return []
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        return try await client
+            .from(DatabaseTable.calendarEvents)
+            .select()
+            .eq("user_id", value: userId.uuidString)
+            .order("start_date", ascending: true)
+            .execute()
+            .value
     }
 
     func saveCalendarEvent(_ event: CalendarEvent) async throws {
         try validateConfiguration()
 
-        // Real calendar event insert/update will be added in a later PR.
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        try await client
+            .from(DatabaseTable.calendarEvents)
+            .upsert(event)
+            .execute()
     }
 
     func deleteCalendarEvent(_ event: CalendarEvent) async throws {
         try validateConfiguration()
 
-        // Real calendar event delete will be added in a later PR.
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        try await client
+            .from(DatabaseTable.calendarEvents)
+            .delete()
+            .eq("id", value: event.id.uuidString)
+            .execute()
     }
 
     func saveScheduledTasks(_ scheduledTasks: [ScheduledTask]) async throws {
