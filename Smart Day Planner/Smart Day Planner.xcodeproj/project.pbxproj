@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		B1847CF6300F0A8A0061F79D /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = B1847CF5300F0A8A0061F79D /* Supabase */; };
+		B1847D433016F01E0061F79D /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = B1847D423016F01E0061F79D /* GoogleSignIn */; };
+		B1847D453016F01E0061F79D /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = B1847D443016F01E0061F79D /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,7 +58,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B1847D453016F01E0061F79D /* GoogleSignInSwift in Frameworks */,
 				B1847CF6300F0A8A0061F79D /* Supabase in Frameworks */,
+				B1847D433016F01E0061F79D /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -126,6 +130,8 @@
 			name = "Smart Day Planner";
 			packageProductDependencies = (
 				B1847CF5300F0A8A0061F79D /* Supabase */,
+				B1847D423016F01E0061F79D /* GoogleSignIn */,
+				B1847D443016F01E0061F79D /* GoogleSignInSwift */,
 			);
 			productName = "Smart Day Planner";
 			productReference = B1847BF62FF89ACC0061F79D /* Smart Day Planner.app */;
@@ -212,6 +218,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				B1847CF3300DAF820061F79D /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				B1847D413016EF3D0061F79D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B1847BF72FF89ACC0061F79D /* Products */;
@@ -601,6 +608,14 @@
 				minimumVersion = 2.5.1;
 			};
 		};
+		B1847D413016EF3D0061F79D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.2.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -608,6 +623,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B1847CF3300DAF820061F79D /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		B1847D423016F01E0061F79D /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B1847D413016EF3D0061F79D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		B1847D443016F01E0061F79D /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B1847D413016EF3D0061F79D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
