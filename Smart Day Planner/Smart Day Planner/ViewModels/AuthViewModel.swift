@@ -23,7 +23,8 @@ final class AuthViewModel: ObservableObject {
         defer { isLoading = false }
 
         if let session = await authService.restoreSession() {
-            userProfile = makeProfile(from: session)
+            let profile = makeProfile(from: session)
+            userProfile = profile
             isAuthenticated = true
         }
     }
@@ -39,21 +40,19 @@ final class AuthViewModel: ObservableObject {
             do {
                 try await supabaseService.upsertProfile(profile)
             } catch {
-                // Supabase is not fully configured yet.
-                // Keep mock login working for now.
                 print("Supabase profile sync skipped: \(error.localizedDescription)")
             }
 
             userProfile = profile
             isAuthenticated = true
         } catch {
-            errorMessage = "Unable to sign in. Please try again."
+            errorMessage = error.localizedDescription
             isAuthenticated = false
         }
 
         isLoading = false
     }
-    
+
     func signOut() async {
         await authService.signOut()
         userProfile = nil

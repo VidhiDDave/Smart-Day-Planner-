@@ -4,7 +4,9 @@
 //
 //  Created by Vidhi Dave on 7/3/26.
 //
+
 import SwiftUI
+import GoogleSignInSwift
 
 struct AuthView: View {
     @ObservedObject var viewModel: AuthViewModel
@@ -34,26 +36,22 @@ struct AuthView: View {
                     .font(.caption)
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
 
-            Button {
-                Task {
-                    await viewModel.signInWithGoogle()
+            if viewModel.isLoading {
+                ProgressView("Signing in...")
+            } else {
+                GoogleSignInButton {
+                    Task {
+                        await viewModel.signInWithGoogle()
+                    }
                 }
-            } label: {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Label("Continue with Google", systemImage: "person.crop.circle.badge.checkmark")
-                        .frame(maxWidth: .infinity)
-                }
+                .frame(height: 48)
+                .padding(.horizontal)
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(viewModel.isLoading)
-            .padding(.horizontal)
 
-            Text("Google Sign-In is mocked for now. Real Supabase and Google authentication will be added in a later PR.")
+            Text("Real Google Sign-In UI is now wired. Supabase Auth token exchange will be added in a later PR.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
