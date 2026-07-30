@@ -14,7 +14,13 @@ final class SettingsViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
+    @Published private(set) var configurationStatus = AppConfigurationStatus.current
+
     private let googleCalendarService = GoogleCalendarService()
+
+    func refreshConfigurationStatus() {
+        configurationStatus = AppConfigurationStatus.current
+    }
 
     func connectGoogleCalendar() async {
         isLoading = true
