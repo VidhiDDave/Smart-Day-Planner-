@@ -1,5 +1,5 @@
 //
-//  SupbaseService.swift
+//  SupabaseService.swift
 //  Smart Day Planner
 //
 //  Created by Vidhi Dave on 7/18/26.
@@ -58,18 +58,78 @@ final class SupabaseService {
         }
     }
 
+    // MARK: - Auth
+
+    func signInWithGoogleIDToken(_ idToken: String) async throws {
+        try validateConfiguration()
+
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        _ = try await client.auth.signInWithIdToken(
+            credentials: OpenIDConnectCredentials(
+                provider: .google,
+                idToken: idToken
+            )
+        )
+    }
+
+    func currentAuthenticatedUserId() async throws -> UUID? {
+        try validateConfiguration()
+
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        let session = try await client.auth.session
+        return session.user.id
+    }
+
+    func signOutFromSupabase() async throws {
+        try validateConfiguration()
+
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        try await client.auth.signOut()
+    }
+
+    // MARK: - Profiles
+
     func fetchProfile(for userId: UUID) async throws -> UserProfile? {
         try validateConfiguration()
 
-        // Real profile fetch will be added in a later auth/profile PR.
-        return nil
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        let profiles: [UserProfile] = try await client
+            .from(DatabaseTable.profiles)
+            .select()
+            .eq("id", value: userId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+
+        return profiles.first
     }
 
     func upsertProfile(_ profile: UserProfile) async throws {
         try validateConfiguration()
 
-        // Real Supabase profile insert/update will be added in a later auth/profile PR.
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        try await client
+            .from(DatabaseTable.profiles)
+            .upsert(profile)
+            .execute()
     }
+
+    // MARK: - Tasks
 
     func fetchTasks(for userId: UUID) async throws -> [TaskItem] {
         try validateConfiguration()
@@ -114,6 +174,8 @@ final class SupabaseService {
             .execute()
     }
 
+    // MARK: - Calendar Events
+
     func fetchCalendarEvents(for userId: UUID) async throws -> [CalendarEvent] {
         try validateConfiguration()
 
@@ -156,6 +218,8 @@ final class SupabaseService {
             .eq("id", value: event.id.uuidString)
             .execute()
     }
+
+    // MARK: - Scheduled Tasks
 
     func saveScheduledTasks(_ scheduledTasks: [ScheduledTask]) async throws {
         try validateConfiguration()
