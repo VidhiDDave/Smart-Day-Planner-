@@ -22,10 +22,24 @@ final class AuthViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        if let session = await authService.restoreSession() {
-            let profile = makeProfile(from: session)
+        guard let googleSession = await authService.restoreSession(),
+              let idToken = googleSession.googleIdToken else {
+            return
+        }
+
+        do {
+            try await supabaseService.signInWithGoogleIDToken(idToken)
+
+            let userId = try await supabaseService.currentAuthenticatedUserId() ?? googleSession.userId
+            let profile = makeProfile(from: googleSession, userId: userId)
+
+            try await supabaseService.upsertProfile(profile)
+
             userProfile = profile
             isAuthenticated = true
+        } catch {
+            errorMessage = error.localizedDescription
+            isAuthenticated = false
         }
     }
 
@@ -34,14 +48,20 @@ final class AuthViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let session = try await authService.signInWithGoogle()
-            let profile = makeProfile(from: session)
+            let googleSession = try await authService.signInWithGoogle()
 
-            do {
-                try await supabaseService.upsertProfile(profile)
-            } catch {
-                print("Supabase profile sync skipped: \(error.localizedDescription)")
+            guard let idToken = googleSession.googleIdToken else {
+                errorMessage = "Google did not return an ID token."
+                isLoading = false
+                return
             }
+
+            try await supabaseService.signInWithGoogleIDToken(idToken)
+
+            let userId = try await supabaseService.currentAuthenticatedUserId() ?? googleSession.userId
+            let profile = makeProfile(from: googleSession, userId: userId)
+
+            try await supabaseService.upsertProfile(profile)
 
             userProfile = profile
             isAuthenticated = true
@@ -55,13 +75,20 @@ final class AuthViewModel: ObservableObject {
 
     func signOut() async {
         await authService.signOut()
+
+        do {
+            try await supabaseService.signOutFromSupabase()
+        } catch {
+            print("Supabase sign out skipped: \(error.localizedDescription)")
+        }
+
         userProfile = nil
         isAuthenticated = false
     }
 
-    private func makeProfile(from session: AuthSession) -> UserProfile {
+    private func makeProfile(from session: AuthSession, userId: UUID) -> UserProfile {
         UserProfile(
-            id: session.userId,
+            id: userId,
             email: session.email,
             fullName: session.fullName,
             avatarURL: session.avatarURL,

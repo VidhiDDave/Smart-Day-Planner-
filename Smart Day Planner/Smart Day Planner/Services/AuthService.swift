@@ -20,7 +20,6 @@ struct AuthSession {
 enum AuthServiceError: LocalizedError {
     case missingRootViewController
     case googleSignInNotConfigured
-    case missingGoogleUser
     case missingIDToken
 
     var errorDescription: String? {
@@ -29,8 +28,6 @@ enum AuthServiceError: LocalizedError {
             return "Unable to find a root view controller for Google Sign-In."
         case .googleSignInNotConfigured:
             return "Google Sign-In is not configured yet."
-        case .missingGoogleUser:
-            return "Google Sign-In did not return a user."
         case .missingIDToken:
             return "Google Sign-In did not return an ID token."
         }
@@ -41,7 +38,16 @@ final class AuthService {
     private(set) var currentSession: AuthSession?
 
     func restoreSession() async -> AuthSession? {
-        await withCheckedContinuation { continuation in
+        guard AppConfig.isGoogleSignInConfigured else {
+            return nil
+        }
+
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(
+            clientID: AppConfig.googleIOSClientID,
+            serverClientID: AppConfig.googleServerClientID
+        )
+
+        return await withCheckedContinuation { continuation in
             GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
                 guard error == nil, let user else {
                     continuation.resume(returning: nil)
@@ -60,6 +66,11 @@ final class AuthService {
             throw AuthServiceError.googleSignInNotConfigured
         }
 
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(
+            clientID: AppConfig.googleIOSClientID,
+            serverClientID: AppConfig.googleServerClientID
+        )
+
         guard let presentingViewController = await MainActor.run(body: {
             UIApplication.shared.rootViewController
         }) else {
@@ -71,8 +82,12 @@ final class AuthService {
         )
 
         let session = makeSession(from: result.user)
-        currentSession = session
 
+        guard session.googleIdToken != nil else {
+            throw AuthServiceError.missingIDToken
+        }
+
+        currentSession = session
         return session
     }
 
@@ -82,20 +97,14 @@ final class AuthService {
     }
 
     private func makeSession(from user: GIDGoogleUser) -> AuthSession {
-        let userId = UUID(uuidString: user.userID ?? "") ?? MockUser.demoUserId
-
-        return AuthSession(
-            userId: userId,
+        AuthSession(
+            userId: UUID(uuidString: user.userID ?? "") ?? UUID(),
             email: user.profile?.email ?? "unknown@gmail.com",
             fullName: user.profile?.name,
             avatarURL: user.profile?.imageURL(withDimension: 120)?.absoluteString,
             googleIdToken: user.idToken?.tokenString
         )
     }
-}
-
-private enum MockUser {
-    static let demoUserId = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
 }
 
 private extension UIApplication {

@@ -51,7 +51,7 @@ struct AuthView: View {
                 .padding(.horizontal)
             }
 
-            Text("Real Google Sign-In UI is now wired. Supabase Auth token exchange will be added in a later PR.")
+            Text("Sign in with Google to start planning your day.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
