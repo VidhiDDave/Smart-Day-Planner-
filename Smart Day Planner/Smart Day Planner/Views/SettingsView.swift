@@ -75,6 +75,32 @@ struct SettingsView: View {
             }
         }
     }
+    
+    private var authSetupChecklistSection: some View {
+        Section("Auth Setup Checklist") {
+            ForEach(settingsViewModel.authSetupChecklistItems) { item in
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: item.isComplete ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(item.isComplete ? .green : .secondary)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.title)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Text(item.detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
+            Text("Real Google Sign-In and Supabase Auth will be connected in the next PR.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
 
     private var calendarSection: some View {
         Section("Calendar") {
