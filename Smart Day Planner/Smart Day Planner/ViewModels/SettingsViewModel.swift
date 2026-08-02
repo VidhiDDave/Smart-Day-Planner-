@@ -13,6 +13,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var isGoogleCalendarConnected = false
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published private(set) var authSetupChecklistItems = AuthSetupChecklist.items
 
     @Published private(set) var configurationStatus = AppConfigurationStatus.current
 
@@ -20,6 +21,7 @@ final class SettingsViewModel: ObservableObject {
 
     func refreshConfigurationStatus() {
         configurationStatus = AppConfigurationStatus.current
+        authSetupChecklistItems = AuthSetupChecklist.items
     }
 
     func connectGoogleCalendar() async {
