@@ -107,7 +107,7 @@ final class AuthService {
     }
 }
 
-private extension UIApplication {
+extension UIApplication {
     var rootViewController: UIViewController? {
         connectedScenes
             .compactMap { $0 as? UIWindowScene }

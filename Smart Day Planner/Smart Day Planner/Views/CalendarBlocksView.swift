@@ -10,6 +10,7 @@ import SwiftUI
 struct CalendarBlocksView: View {
     @ObservedObject var viewModel: PlannerViewModel
     @State private var isShowingAddEvent = false
+    @State private var isImportingGoogleCalendar = false
 
     var body: some View {
         NavigationStack {
@@ -31,16 +32,46 @@ struct CalendarBlocksView: View {
             }
             .navigationTitle("Calendar")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        Task {
+                            isImportingGoogleCalendar = true
+                            await viewModel.importTodayGoogleCalendarEvents()
+                            isImportingGoogleCalendar = false
+                        }
+                    } label: {
+                        if isImportingGoogleCalendar {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "arrow.down.circle")
+                        }
+                    }
+                    .disabled(isImportingGoogleCalendar)
+                    .accessibilityLabel("Import Google Calendar events")
+
                     Button {
                         isShowingAddEvent = true
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Add calendar block")
                 }
             }
             .sheet(isPresented: $isShowingAddEvent) {
                 AddCalendarEventView(viewModel: viewModel)
+            }
+            .alert(
+                "Calendar Import",
+                isPresented: Binding(
+                    get: { viewModel.scheduleMessage != nil },
+                    set: { if !$0 { viewModel.scheduleMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {
+                    viewModel.scheduleMessage = nil
+                }
+            } message: {
+                Text(viewModel.scheduleMessage ?? "")
             }
             .task {
                 await viewModel.loadCalendarEvents()
