@@ -31,12 +31,15 @@ final class AuthViewModel: ObservableObject {
             try await supabaseService.signInWithGoogleIDToken(idToken)
 
             let userId = try await supabaseService.currentAuthenticatedUserId() ?? googleSession.userId
-            let profile = makeProfile(from: googleSession, userId: userId)
 
-            try await supabaseService.upsertProfile(profile)
+            let profile = try await fetchOrCreateProfile(
+                from: googleSession,
+                userId: userId
+            )
 
             userProfile = profile
             isAuthenticated = true
+            
         } catch {
             errorMessage = error.localizedDescription
             isAuthenticated = false
@@ -84,6 +87,17 @@ final class AuthViewModel: ObservableObject {
 
         userProfile = nil
         isAuthenticated = false
+    }
+    
+    private func fetchOrCreateProfile(from session: AuthSession, userId: UUID) async throws -> UserProfile {
+        if let existingProfile = try await supabaseService.fetchProfile(for: userId) {
+            return existingProfile
+        }
+
+        let newProfile = makeProfile(from: session, userId: userId)
+        try await supabaseService.upsertProfile(newProfile)
+
+        return newProfile
     }
 
     private func makeProfile(from session: AuthSession, userId: UUID) -> UserProfile {

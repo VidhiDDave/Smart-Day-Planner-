@@ -23,6 +23,7 @@ final class PlannerViewModel: ObservableObject {
     private let availabilityService = CalendarAvailabilityService()
     private let optimizer = ScheduleOptimizer()
     private let supabaseService = SupabaseService()
+    private let googleCalendarService = GoogleCalendarService()
 
     func configureUser(_ userId: UUID) {
         guard currentUserId != userId else {
@@ -247,6 +248,40 @@ final class PlannerViewModel: ObservableObject {
             try await supabaseService.deleteCalendarEvent(event)
         } catch {
             scheduleMessage = "Calendar block deleted locally, but Supabase delete failed."
+        }
+    }
+    
+    func importTodayGoogleCalendarEvents() async {
+        guard let currentUserId else {
+            scheduleMessage = "Please sign in before importing calendar events."
+            return
+        }
+
+        do {
+            let importedEvents = try await googleCalendarService.fetchTodayEvents(for: currentUserId)
+
+            let newEvents = importedEvents.filter { importedEvent in
+                !calendarEvents.contains { existingEvent in
+                    existingEvent.externalEventId == importedEvent.externalEventId &&
+                    existingEvent.source == importedEvent.source
+                }
+            }
+
+            calendarEvents.append(contentsOf: newEvents)
+
+            for event in newEvents {
+                await saveCalendarEventToSupabaseIfConfigured(event)
+            }
+
+            if importedEvents.isEmpty {
+                scheduleMessage = "Google Calendar returned 0 events for today."
+            } else if newEvents.isEmpty {
+                scheduleMessage = "Google Calendar returned \(importedEvents.count) event(s), but they were already imported."
+            } else {
+                scheduleMessage = "Imported \(newEvents.count) of \(importedEvents.count) Google Calendar event(s)."
+            }
+        } catch {
+            scheduleMessage = error.localizedDescription
         }
     }
 }
