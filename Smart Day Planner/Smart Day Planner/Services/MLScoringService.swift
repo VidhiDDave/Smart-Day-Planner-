@@ -8,6 +8,8 @@
 
 import Foundation
 
+/// Rule-based scoring service used as the first scheduling intelligence layer.
+/// This can later be replaced with a Core ML model using the same task-slot inputs.
 struct MLScoringService {
     func score(task: TaskItem, in slot: TimeSlot) -> Double {
         guard slot.canFit(durationMinutes: task.durationMinutes) else {
