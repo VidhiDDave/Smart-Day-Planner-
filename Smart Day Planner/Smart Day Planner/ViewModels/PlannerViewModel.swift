@@ -36,6 +36,7 @@ final class PlannerViewModel: ObservableObject {
         Task {
             await loadTasks()
             await loadCalendarEvents()
+            await loadScheduledTasks()
         }
     }
 
@@ -79,6 +80,22 @@ final class PlannerViewModel: ObservableObject {
             calendarEvents = try await supabaseService.fetchCalendarEvents(for: currentUserId)
         } catch {
             scheduleMessage = "Unable to load calendar events from Supabase. Using local events for now."
+        }
+    }
+
+    func loadScheduledTasks() async {
+        guard let currentUserId else {
+            return
+        }
+
+        guard supabaseService.isConfigured else {
+            return
+        }
+
+        do {
+            optimizedSchedule = try await supabaseService.fetchScheduledTasks(for: currentUserId)
+        } catch {
+            scheduleMessage = "Unable to load saved schedule from Supabase."
         }
     }
 
@@ -187,11 +204,19 @@ final class PlannerViewModel: ObservableObject {
         } else {
             scheduleMessage = "Generated \(optimizedSchedule.count) scheduled task(s)."
         }
+
+        Task {
+            await saveGeneratedScheduleToSupabaseIfConfigured()
+        }
     }
 
     func clearSchedule() {
         optimizedSchedule.removeAll()
         scheduleMessage = nil
+
+        Task {
+            await deleteScheduledTasksFromSupabaseIfConfigured()
+        }
     }
 
     private func clearPlannerData() {
@@ -250,7 +275,43 @@ final class PlannerViewModel: ObservableObject {
             scheduleMessage = "Calendar block deleted locally, but Supabase delete failed."
         }
     }
-    
+
+    private func saveGeneratedScheduleToSupabaseIfConfigured() async {
+        guard let currentUserId else {
+            return
+        }
+
+        guard supabaseService.isConfigured else {
+            return
+        }
+
+        do {
+            try await supabaseService.deleteScheduledTasks(for: currentUserId)
+
+            if !optimizedSchedule.isEmpty {
+                try await supabaseService.saveScheduledTasks(optimizedSchedule)
+            }
+        } catch {
+            scheduleMessage = "Schedule generated locally, but Supabase sync failed."
+        }
+    }
+
+    private func deleteScheduledTasksFromSupabaseIfConfigured() async {
+        guard let currentUserId else {
+            return
+        }
+
+        guard supabaseService.isConfigured else {
+            return
+        }
+
+        do {
+            try await supabaseService.deleteScheduledTasks(for: currentUserId)
+        } catch {
+            scheduleMessage = "Schedule cleared locally, but Supabase delete failed."
+        }
+    }
+
     func importTodayGoogleCalendarEvents() async {
         guard let currentUserId else {
             scheduleMessage = "Please sign in before importing calendar events."
