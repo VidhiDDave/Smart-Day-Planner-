@@ -221,9 +221,50 @@ final class SupabaseService {
 
     // MARK: - Scheduled Tasks
 
+    func fetchScheduledTasks(for userId: UUID) async throws -> [ScheduledTask] {
+        try validateConfiguration()
+
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        return try await client
+            .from(DatabaseTable.scheduledTasks)
+            .select()
+            .eq("user_id", value: userId.uuidString)
+            .order("start_date", ascending: true)
+            .execute()
+            .value
+    }
+
     func saveScheduledTasks(_ scheduledTasks: [ScheduledTask]) async throws {
         try validateConfiguration()
 
-        // Real scheduled task persistence will be added in a later PR.
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        guard !scheduledTasks.isEmpty else {
+            return
+        }
+
+        try await client
+            .from(DatabaseTable.scheduledTasks)
+            .upsert(scheduledTasks)
+            .execute()
+    }
+
+    func deleteScheduledTasks(for userId: UUID) async throws {
+        try validateConfiguration()
+
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        try await client
+            .from(DatabaseTable.scheduledTasks)
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
     }
 }
