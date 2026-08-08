@@ -4,3 +4,7 @@ xcuserdata/
 DerivedData/
 .build/
 .swiftpm/
+
+ML/.venv/
+ML/task_placement_training_data.csv
+ML/TaskPlacementScorer.mlpackage/
