@@ -135,6 +135,7 @@ final class PlannerViewModel: ObservableObject {
 
         Task {
             await deleteTaskFromSupabaseIfConfigured(task)
+            await syncScheduleToSupabaseIfConfigured()
         }
     }
 
@@ -146,8 +147,16 @@ final class PlannerViewModel: ObservableObject {
         tasks[index].isCompleted.toggle()
         let updatedTask = tasks[index]
 
+        if updatedTask.isCompleted {
+            optimizedSchedule.removeAll { $0.taskId == updatedTask.id }
+        }
+
         Task {
             await saveTaskToSupabaseIfConfigured(updatedTask)
+
+            if updatedTask.isCompleted {
+                await syncScheduleToSupabaseIfConfigured()
+            }
         }
     }
 
@@ -206,7 +215,7 @@ final class PlannerViewModel: ObservableObject {
         }
 
         Task {
-            await saveGeneratedScheduleToSupabaseIfConfigured()
+            await syncScheduleToSupabaseIfConfigured()
         }
     }
 
@@ -276,7 +285,7 @@ final class PlannerViewModel: ObservableObject {
         }
     }
 
-    private func saveGeneratedScheduleToSupabaseIfConfigured() async {
+    private func syncScheduleToSupabaseIfConfigured() async {
         guard let currentUserId else {
             return
         }
@@ -292,7 +301,7 @@ final class PlannerViewModel: ObservableObject {
                 try await supabaseService.saveScheduledTasks(optimizedSchedule)
             }
         } catch {
-            scheduleMessage = "Schedule generated locally, but Supabase sync failed."
+            scheduleMessage = "Schedule updated locally, but Supabase sync failed."
         }
     }
 
