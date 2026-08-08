@@ -183,17 +183,21 @@ final class PlannerViewModel: ObservableObject {
         )
 
         calendarEvents.append(event)
+        invalidateScheduleAfterCalendarChange()
 
         Task {
             await saveCalendarEventToSupabaseIfConfigured(event)
+            await deleteScheduledTasksFromSupabaseIfConfigured()
         }
     }
 
     func deleteCalendarEvent(_ event: CalendarEvent) {
         calendarEvents.removeAll { $0.id == event.id }
+        invalidateScheduleAfterCalendarChange()
 
         Task {
             await deleteCalendarEventFromSupabaseIfConfigured(event)
+            await deleteScheduledTasksFromSupabaseIfConfigured()
         }
     }
 
@@ -235,6 +239,15 @@ final class PlannerViewModel: ObservableObject {
         scheduleMessage = nil
         isLoadingTasks = false
         isLoadingCalendarEvents = false
+    }
+
+    private func invalidateScheduleAfterCalendarChange() {
+        guard !optimizedSchedule.isEmpty else {
+            return
+        }
+
+        optimizedSchedule.removeAll()
+        scheduleMessage = "Calendar changed. Regenerate your schedule to update task times."
     }
 
     private func saveTaskToSupabaseIfConfigured(_ task: TaskItem) async {
@@ -343,12 +356,17 @@ final class PlannerViewModel: ObservableObject {
                 await saveCalendarEventToSupabaseIfConfigured(event)
             }
 
+            if !newEvents.isEmpty {
+                invalidateScheduleAfterCalendarChange()
+                await deleteScheduledTasksFromSupabaseIfConfigured()
+            }
+
             if importedEvents.isEmpty {
                 scheduleMessage = "Google Calendar returned 0 events for today."
             } else if newEvents.isEmpty {
                 scheduleMessage = "Google Calendar returned \(importedEvents.count) event(s), but they were already imported."
             } else {
-                scheduleMessage = "Imported \(newEvents.count) of \(importedEvents.count) Google Calendar event(s)."
+                scheduleMessage = "Imported \(newEvents.count) of \(importedEvents.count) Google Calendar event(s). Regenerate your schedule to update task times."
             }
         } catch {
             scheduleMessage = error.localizedDescription
