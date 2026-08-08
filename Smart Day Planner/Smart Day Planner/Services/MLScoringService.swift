@@ -16,16 +16,23 @@ struct MLScoringService {
             return 0.0
         }
 
-        let hour = Calendar.current.component(.hour, from: slot.startDate)
-        let deadlineHoursRemaining = task.deadline.timeIntervalSince(slot.startDate) / 3600
+        let features = TaskPlacementFeatures(task: task, slot: slot)
 
         var score = 0.5
 
-        score += priorityScore(task.priority)
-        score += deadlineScore(deadlineHoursRemaining)
-        score += durationFitScore(task: task, slot: slot)
-        score += energyTimeScore(energyLevel: task.energyLevel, hour: hour)
-        score += categoryTimeScore(category: task.category, hour: hour)
+        score += priorityScore(Int(features.priority))
+        score += deadlineScore(features.minutesUntilDeadline / 60)
+        score += durationFitScore(
+            remainingMinutes: features.remainingSlotMinutes
+        )
+        score += energyTimeScore(
+            energyLevel: Int(features.energyLevel),
+            hour: Int(features.startHour)
+        )
+        score += categoryTimeScore(
+            category: task.category,
+            hour: Int(features.startHour)
+        )
 
         return min(max(score, 0.0), 1.0)
     }
@@ -46,14 +53,12 @@ struct MLScoringService {
         }
     }
 
-    private func durationFitScore(task: TaskItem, slot: TimeSlot) -> Double {
-        let leftoverMinutes = slot.durationMinutes - task.durationMinutes
-
-        if leftoverMinutes < 0 {
+    private func durationFitScore(remainingMinutes: Double) -> Double {
+        if remainingMinutes < 0 {
             return -1.0
-        } else if leftoverMinutes <= 30 {
+        } else if remainingMinutes <= 30 {
             return 0.15
-        } else if leftoverMinutes <= 90 {
+        } else if remainingMinutes <= 90 {
             return 0.1
         } else {
             return 0.05
