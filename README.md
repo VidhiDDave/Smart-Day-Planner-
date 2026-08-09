@@ -1,4 +1,4 @@
-Smart Day Planner
+ Smart Day Planner
 
 Smart Day Planner is an iOS app I built to help organize tasks around a user's actual free time.
 
@@ -44,7 +44,7 @@ Each possible task placement is scored using a Core ML model based on things lik
 
 The scheduler uses these scores to choose where tasks should go while still making sure they fit within the available time.
 
-Machine Learning
+ Machine Learning
 
 The project includes a small ML training pipeline inside the `ML` folder.
 
@@ -53,16 +53,16 @@ I generated synthetic task scheduling examples and used them to train a Random F
 The model is then converted to Core ML using `coremltools` so it can run directly inside the iOS app.
 
 The current model was trained using 30,000 synthetic examples.
-
 The training files are:
+
+```text
 ML/
 ├── generate_training_data.py
 ├── train_task_placement_model.py
 └── requirements.txt
-The generated model used by the app is:
-TaskPlacementScorer.mlpackage
-If the Core ML prediction fails for some reason, the app can fall back to the original scheduling heuristic.
-Learning From User Feedback
+
+```
+
 I also added a feedback system so the project can eventually train on real user behavior instead of only synthetic data.
 For example, if the app schedules a task for 9:00 AM but the user moves it to 7:00 PM, the app stores information about both placements.
 Currently the app can store feedback such as:
@@ -70,6 +70,7 @@ accepted
 completed
 moved
 skipped
+
 The same features used by the Core ML model are stored with the feedback in Supabase.
 The next step would be using enough real feedback to retrain the model and compare it against the original synthetic model.
 Schedule Editing
@@ -84,7 +85,8 @@ Google Calendar
 The app can import today’s events from Google Calendar.
 Imported events are treated as unavailable time so the scheduler works around them.
 Manual calendar blocks can also be added directly inside the app.
-Backend
+
+Backend:
 I used Supabase for the backend.
 It stores:
 user profiles
@@ -93,6 +95,7 @@ calendar events
 generated schedules
 task placement feedback
 Supabase Row Level Security is used so users can only access their own data.
+
 Tech Stack
 iOS
 Swift
@@ -118,6 +121,7 @@ Swift Testing
 XCTest
 XCUITest
 Project Structure
+```text
 Smart-Day-Planner-
 │
 ├── Backend/
@@ -142,57 +146,87 @@ Smart-Day-Planner-
     │
     ├── Smart Day PlannerTests/
     └── Smart Day PlannerUITests/
+```
 Testing
-I added unit tests around the main scheduling logic, including:
-task placement features
-available time slot calculations
-completed task filtering
-deadline handling
-making sure tasks fit into available slots
-preventing scheduled tasks from overlapping
-chronological schedule ordering
-There are also UI tests for basic app launch and authentication screen behavior.
-Tests can be run in Xcode with:
-Command + U
-Running the Project
-Clone the repository:
-git clone https://github.com/VidhiDDave/Smart-Day-Planner-.git
-cd Smart-Day-Planner-
-Open the Xcode project inside the Smart Day Planner folder.
-The project uses Swift packages for Google Sign-In and Supabase, which Xcode should resolve automatically.
-You will need your own Supabase and Google Cloud configuration to use authentication and calendar features.
-I keep API keys and other local configuration out of Git.
-The Supabase database schema is available here:
-Backend/supabase_schema.sql
-Training the Model
-I used Python 3.12 for the ML environment.
-Create a virtual environment:
-python3.12 -m venv ML/.venv
-source ML/.venv/bin/activate
-Install the requirements:
-pip install -r ML/requirements.txt
-Generate training data:
-python ML/generate_training_data.py
-Train the model:
-python ML/train_task_placement_model.py
-The training data and virtual environment are ignored by Git.
-Current Status
-The main goal of this project was to build out the complete scheduling idea and learn more about iOS development, backend integration, and using an ML model inside an app.
-The main functionality is working, including task management, calendar integration, schedule generation, schedule editing, Core ML scoring, persistence, feedback collection, and testing.
-I am treating the current version as the GitHub/project version rather than a production release.
-Future Ideas
-Some things I would like to add later:
-Train the model using real user feedback
-Compare different ML models
-Multi-day scheduling
-Recurring tasks
-Better personalization based on user habits
-Offline support
-More UI and integration tests
-General UI/UX improvements
-TestFlight testing
-Production setup
-App Store release
-Note
-This project is currently mainly for learning and portfolio purposes. Production hardening and App Store deployment can be added later.
 
+I added unit tests around the main scheduling logic, including:
+
+- Task placement features
+- Available time slot calculations
+- Completed task filtering
+- Deadline handling
+- Making sure tasks fit into available slots
+- Preventing scheduled tasks from overlapping
+- Chronological schedule ordering
+
+There are also UI tests for basic app launch and authentication screen behavior.
+
+Tests can be run in Xcode with Command + U.
+
+ Running the Project
+
+Clone the repository:
+
+git clone https://github.com/VidhiDDave/Smart-Day-Planner-.git
+
+cd Smart-Day-Planner-
+
+Open the Xcode project inside the Smart Day Planner folder.
+
+The project uses Swift packages for Google Sign-In and Supabase, which Xcode should resolve automatically.
+
+You will need your own Supabase and Google Cloud configuration to use authentication and calendar features.
+
+I keep API keys and other local configuration out of Git.
+
+The Supabase database schema is available here:
+
+Backend/supabase_schema.sql
+
+Training the Model
+
+I used Python 3.12 for the ML environment.
+
+Create a virtual environment:
+
+python3.12 -m venv ML/.venv
+
+source ML/.venv/bin/activate
+
+Install the requirements:
+
+pip install -r ML/requirements.txt
+
+Generate training data:
+
+python ML/generate_training_data.py
+
+Train the model:
+
+python ML/train_task_placement_model.py
+
+The training data and virtual environment are ignored by Git.
+
+Current Status
+
+The main goal of this project was to build out the complete scheduling idea and learn more about iOS development, backend integration, and using an ML model inside an app.
+
+The main functionality is working, including task management, calendar integration, schedule generation, schedule editing, Core ML scoring, persistence, feedback collection, and testing.
+
+I am treating the current version as the GitHub/project version rather than a production release.
+
+ Future Ideas
+
+Some things I would like to add later:
+
+- Train the model using real user feedback
+- Compare different ML models
+- Multi-day scheduling
+- Recurring tasks
+- Better personalization based on user habits
+- Offline support
+- More UI and integration tests
+- General UI/UX improvements
+- TestFlight testing
+- Production setup
+- App Store release
