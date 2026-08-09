@@ -12,4 +12,5 @@ enum DatabaseTable {
     static let tasks = "tasks"
     static let calendarEvents = "calendar_events"
     static let scheduledTasks = "scheduled_tasks"
+    static let taskPlacementFeedback = "task_placement_feedback"
 }

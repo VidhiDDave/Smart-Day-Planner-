@@ -1,11 +1,10 @@
 -- Smart Day Planner Supabase Schema
--- This schema supports Google/Supabase-authenticated users, task storage,
--- calendar blocks, and generated schedules.
 
 create extension if not exists "pgcrypto";
 
+
 -- Profiles
--- One profile per authenticated user.
+
 create table if not exists public.profiles (
     id uuid primary key references auth.users(id) on delete cascade,
     email text not null,
@@ -34,7 +33,7 @@ with check (auth.uid() = id);
 
 
 -- Tasks
--- User-created tasks that need to be scheduled.
+
 create table if not exists public.tasks (
     id uuid primary key default gen_random_uuid(),
     user_id uuid not null references public.profiles(id) on delete cascade,
@@ -73,8 +72,7 @@ using (auth.uid() = user_id);
 
 
 -- Calendar Events
--- Fixed blocks the scheduler should not schedule over.
--- These can be manually added or imported from Google Calendar later.
+
 create table if not exists public.calendar_events (
     id uuid primary key default gen_random_uuid(),
     user_id uuid not null references public.profiles(id) on delete cascade,
@@ -112,7 +110,7 @@ using (auth.uid() = user_id);
 
 
 -- Scheduled Tasks
--- Generated output from the planner.
+
 create table if not exists public.scheduled_tasks (
     id uuid primary key default gen_random_uuid(),
     user_id uuid not null references public.profiles(id) on delete cascade,
@@ -149,12 +147,94 @@ for delete
 using (auth.uid() = user_id);
 
 
--- Helpful indexes
-create index if not exists tasks_user_id_idx on public.tasks(user_id);
-create index if not exists tasks_deadline_idx on public.tasks(deadline);
+-- Task Placement Feedback
+-- Behavioral data that can be used to retrain the placement model.
 
-create index if not exists calendar_events_user_id_idx on public.calendar_events(user_id);
-create index if not exists calendar_events_start_date_idx on public.calendar_events(start_date);
+create table if not exists public.task_placement_feedback (
+    id uuid primary key default gen_random_uuid(),
 
-create index if not exists scheduled_tasks_user_id_idx on public.scheduled_tasks(user_id);
-create index if not exists scheduled_tasks_start_date_idx on public.scheduled_tasks(start_date);
+    user_id uuid not null
+        references public.profiles(id)
+        on delete cascade,
+
+    task_id uuid
+        references public.tasks(id)
+        on delete set null,
+
+    priority double precision not null,
+    energy_level double precision not null,
+    duration_minutes double precision not null,
+    minutes_until_deadline double precision not null,
+    start_hour double precision not null,
+    slot_duration_minutes double precision not null,
+    remaining_slot_minutes double precision not null,
+    category_value double precision not null,
+
+    suggested_start_date timestamptz,
+    actual_start_date timestamptz,
+
+    feedback_type text not null
+        check (
+            feedback_type in (
+                'accepted',
+                'completed',
+                'moved',
+                'skipped'
+            )
+        ),
+
+    target_score double precision not null
+        check (
+            target_score >= 0
+            and target_score <= 1
+        ),
+
+    created_at timestamptz not null default now()
+);
+
+alter table public.task_placement_feedback enable row level security;
+
+create policy "Users can view their own task placement feedback"
+on public.task_placement_feedback
+for select
+using (auth.uid() = user_id);
+
+create policy "Users can insert their own task placement feedback"
+on public.task_placement_feedback
+for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can delete their own task placement feedback"
+on public.task_placement_feedback
+for delete
+using (auth.uid() = user_id);
+
+
+-- Indexes
+
+create index if not exists tasks_user_id_idx
+on public.tasks(user_id);
+
+create index if not exists tasks_deadline_idx
+on public.tasks(deadline);
+
+create index if not exists calendar_events_user_id_idx
+on public.calendar_events(user_id);
+
+create index if not exists calendar_events_start_date_idx
+on public.calendar_events(start_date);
+
+create index if not exists scheduled_tasks_user_id_idx
+on public.scheduled_tasks(user_id);
+
+create index if not exists scheduled_tasks_start_date_idx
+on public.scheduled_tasks(start_date);
+
+create index if not exists task_placement_feedback_user_id_idx
+on public.task_placement_feedback(user_id);
+
+create index if not exists task_placement_feedback_task_id_idx
+on public.task_placement_feedback(task_id);
+
+create index if not exists task_placement_feedback_created_at_idx
+on public.task_placement_feedback(created_at);

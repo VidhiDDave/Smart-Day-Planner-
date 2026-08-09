@@ -17,8 +17,10 @@ enum SupabaseServiceError: LocalizedError {
         switch self {
         case .invalidProjectURL:
             return "The Supabase project URL is invalid."
+
         case .missingConfiguration:
             return "Supabase configuration is missing."
+
         case .missingClient:
             return "Supabase client is not available."
         }
@@ -266,5 +268,40 @@ final class SupabaseService {
             .delete()
             .eq("user_id", value: userId.uuidString)
             .execute()
+    }
+
+    // MARK: - Task Placement Feedback
+
+    func saveTaskPlacementFeedback(
+        _ feedback: TaskPlacementFeedback
+    ) async throws {
+        try validateConfiguration()
+
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        try await client
+            .from(DatabaseTable.taskPlacementFeedback)
+            .insert(feedback)
+            .execute()
+    }
+
+    func fetchTaskPlacementFeedback(
+        for userId: UUID
+    ) async throws -> [TaskPlacementFeedback] {
+        try validateConfiguration()
+
+        guard let client else {
+            throw SupabaseServiceError.missingClient
+        }
+
+        return try await client
+            .from(DatabaseTable.taskPlacementFeedback)
+            .select()
+            .eq("user_id", value: userId.uuidString)
+            .order("created_at", ascending: true)
+            .execute()
+            .value
     }
 }
