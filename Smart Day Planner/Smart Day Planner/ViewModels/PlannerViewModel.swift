@@ -77,7 +77,9 @@ final class PlannerViewModel: ObservableObject {
         defer { isLoadingCalendarEvents = false }
 
         do {
-            calendarEvents = try await supabaseService.fetchCalendarEvents(for: currentUserId)
+            calendarEvents = try await supabaseService.fetchCalendarEvents(
+                for: currentUserId
+            )
         } catch {
             scheduleMessage = "Unable to load calendar events from Supabase. Using local events for now."
         }
@@ -253,6 +255,90 @@ final class PlannerViewModel: ObservableObject {
         }
     }
 
+    func rescheduleTask(
+        _ scheduledTask: ScheduledTask,
+        to newStartDate: Date
+    ) -> Bool {
+        guard let index = optimizedSchedule.firstIndex(
+            where: { $0.id == scheduledTask.id }
+        ) else {
+            scheduleMessage = "Unable to find the scheduled task."
+            return false
+        }
+
+        guard let task = tasks.first(
+            where: { $0.id == scheduledTask.taskId }
+        ) ?? scheduledTask.task else {
+            scheduleMessage = "Unable to find the original task."
+            return false
+        }
+
+        let duration = scheduledTask.endDate.timeIntervalSince(
+            scheduledTask.startDate
+        )
+
+        let newEndDate = newStartDate.addingTimeInterval(duration)
+
+        guard newEndDate <= task.deadline else {
+            scheduleMessage = "The task cannot be moved past its deadline."
+            return false
+        }
+
+        let overlapsCalendarEvent = calendarEvents.contains { event in
+            datesOverlap(
+                startDate: newStartDate,
+                endDate: newEndDate,
+                otherStartDate: event.startDate,
+                otherEndDate: event.endDate
+            )
+        }
+
+        guard !overlapsCalendarEvent else {
+            scheduleMessage = "That time conflicts with a calendar event."
+            return false
+        }
+
+        let overlapsScheduledTask = optimizedSchedule.contains { otherTask in
+            guard otherTask.id != scheduledTask.id else {
+                return false
+            }
+
+            return datesOverlap(
+                startDate: newStartDate,
+                endDate: newEndDate,
+                otherStartDate: otherTask.startDate,
+                otherEndDate: otherTask.endDate
+            )
+        }
+
+        guard !overlapsScheduledTask else {
+            scheduleMessage = "That time conflicts with another scheduled task."
+            return false
+        }
+
+        let originalScheduledTask = optimizedSchedule[index]
+
+        optimizedSchedule[index].startDate = newStartDate
+        optimizedSchedule[index].endDate = newEndDate
+        optimizedSchedule[index].explanation = "Moved to your preferred time."
+
+        let updatedScheduledTask = optimizedSchedule[index]
+
+        scheduleMessage = "Task moved to \(newStartDate.plannerTimeText)."
+
+        Task {
+            await recordMovedTaskPlacementFeedback(
+                task: task,
+                originalScheduledTask: originalScheduledTask,
+                updatedScheduledTask: updatedScheduledTask
+            )
+
+            await syncScheduleToSupabaseIfConfigured()
+        }
+
+        return true
+    }
+
     func clearSchedule() {
         optimizedSchedule.removeAll()
         scheduleMessage = nil
@@ -278,6 +364,16 @@ final class PlannerViewModel: ObservableObject {
 
         optimizedSchedule.removeAll()
         scheduleMessage = "Calendar changed. Regenerate your schedule to update task times."
+    }
+
+    private func datesOverlap(
+        startDate: Date,
+        endDate: Date,
+        otherStartDate: Date,
+        otherEndDate: Date
+    ) -> Bool {
+        startDate < otherEndDate &&
+        endDate > otherStartDate
     }
 
     private func saveTaskToSupabaseIfConfigured(
@@ -340,7 +436,8 @@ final class PlannerViewModel: ObservableObject {
         task: TaskItem,
         scheduledTask: ScheduledTask,
         type: TaskPlacementFeedbackType,
-        targetScore: Double
+        targetScore: Double,
+        actualStartDate: Date? = nil
     ) async {
         guard let currentUserId else {
             return
@@ -365,6 +462,7 @@ final class PlannerViewModel: ObservableObject {
             taskId: task.id,
             features: features,
             suggestedStartDate: scheduledTask.startDate,
+            actualStartDate: actualStartDate,
             feedbackType: type,
             targetScore: targetScore
         )
@@ -376,6 +474,28 @@ final class PlannerViewModel: ObservableObject {
         } catch {
             scheduleMessage = "Task updated, but learning feedback could not be saved."
         }
+    }
+
+    private func recordMovedTaskPlacementFeedback(
+        task: TaskItem,
+        originalScheduledTask: ScheduledTask,
+        updatedScheduledTask: ScheduledTask
+    ) async {
+        await recordTaskPlacementFeedback(
+            task: task,
+            scheduledTask: originalScheduledTask,
+            type: .moved,
+            targetScore: 0.20,
+            actualStartDate: updatedScheduledTask.startDate
+        )
+
+        await recordTaskPlacementFeedback(
+            task: task,
+            scheduledTask: updatedScheduledTask,
+            type: .accepted,
+            targetScore: 1.0,
+            actualStartDate: updatedScheduledTask.startDate
+        )
     }
 
     private func syncScheduleToSupabaseIfConfigured() async {

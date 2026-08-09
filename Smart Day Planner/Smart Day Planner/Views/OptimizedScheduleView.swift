@@ -10,6 +10,8 @@ import SwiftUI
 struct OptimizedScheduleView: View {
     @ObservedObject var viewModel: PlannerViewModel
 
+    @State private var scheduledTaskBeingEdited: ScheduledTask?
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -26,12 +28,19 @@ struct OptimizedScheduleView: View {
                         ContentUnavailableView(
                             "No Schedule Yet",
                             systemImage: "sparkles",
-                            description: Text("Add tasks and calendar blocks, then generate an optimized schedule.")
+                            description: Text(
+                                "Add tasks and calendar blocks, then generate an optimized schedule."
+                            )
                         )
                         .padding(.top, 40)
                     } else {
                         ForEach(viewModel.optimizedSchedule) { scheduledTask in
-                            ScheduleCardView(scheduledTask: scheduledTask)
+                            ScheduleCardView(
+                                scheduledTask: scheduledTask,
+                                onEdit: {
+                                    scheduledTaskBeingEdited = scheduledTask
+                                }
+                            )
                         }
                     }
                 }
@@ -46,6 +55,12 @@ struct OptimizedScheduleView: View {
                     .disabled(viewModel.optimizedSchedule.isEmpty)
                 }
             }
+            .sheet(item: $scheduledTaskBeingEdited) { scheduledTask in
+                EditScheduledTaskView(
+                    scheduledTask: scheduledTask,
+                    viewModel: viewModel
+                )
+            }
         }
     }
 
@@ -55,15 +70,20 @@ struct OptimizedScheduleView: View {
                 .font(.title2)
                 .fontWeight(.bold)
 
-            Text("Generate a daily plan using your tasks, fixed calendar blocks, and ML-style task-time scoring.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Text(
+                "Generate a daily plan using your tasks, fixed calendar blocks, and ML task-time scoring."
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
 
             Button {
                 viewModel.generateOptimizedSchedule()
             } label: {
-                Label("Generate Schedule", systemImage: "wand.and.sparkles")
-                    .frame(maxWidth: .infinity)
+                Label(
+                    "Generate Schedule",
+                    systemImage: "wand.and.sparkles"
+                )
+                .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .disabled(viewModel.tasks.isEmpty)
@@ -73,6 +93,7 @@ struct OptimizedScheduleView: View {
 
 #Preview {
     let viewModel = PlannerViewModel()
+
     viewModel.addTask(
         title: "Finish CS assignment",
         durationMinutes: 120,
@@ -81,7 +102,10 @@ struct OptimizedScheduleView: View {
         energyLevel: 5,
         category: .study
     )
+
     viewModel.generateOptimizedSchedule()
 
-    return OptimizedScheduleView(viewModel: viewModel)
+    return OptimizedScheduleView(
+        viewModel: viewModel
+    )
 }
