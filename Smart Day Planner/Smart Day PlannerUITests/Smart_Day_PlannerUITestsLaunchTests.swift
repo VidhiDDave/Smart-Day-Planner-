@@ -20,14 +20,37 @@ final class Smart_Day_PlannerUITestsLaunchTests: XCTestCase {
     @MainActor
     func testLaunch() throws {
         let app = XCUIApplication()
+
+        app.launchArguments += [
+            "-AppleLanguages",
+            "(en)",
+            "-AppleLocale",
+            "en_US"
+        ]
+
         app.launch()
 
-        // Insert steps here to perform after app launch but before taking a screenshot,
-        // such as logging into a test account or navigating somewhere in the app
+        XCTAssertTrue(
+            app.wait(
+                for: .runningForeground,
+                timeout: 5
+            ),
+            "Expected Smart Day Planner to launch into the foreground."
+        )
 
-        let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "Launch Screen"
+        XCTAssertTrue(
+            app.staticTexts["Smart Day Planner"]
+                .waitForExistence(timeout: 5),
+            "Expected the main authentication screen after launch."
+        )
+
+        let attachment = XCTAttachment(
+            screenshot: app.screenshot()
+        )
+
+        attachment.name = "Smart Day Planner Launch"
         attachment.lifetime = .keepAlways
+
         add(attachment)
     }
 }
