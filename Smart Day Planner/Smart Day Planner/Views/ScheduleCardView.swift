@@ -9,28 +9,54 @@ import SwiftUI
 
 struct ScheduleCardView: View {
     let scheduledTask: ScheduledTask
+    let onEdit: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(timeRangeText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack(alignment: .top) {
+                Text(timeRangeText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-            Text(scheduledTask.task?.title ?? "Scheduled Task")
-                .font(.headline)
+                Spacer()
+
+                Button {
+                    onEdit()
+                } label: {
+                    Label(
+                        "Edit",
+                        systemImage: "calendar.badge.clock"
+                    )
+                    .font(.caption)
+                }
+                .buttonStyle(.bordered)
+            }
+
+            Text(
+                scheduledTask.task?.title ??
+                "Scheduled Task"
+            )
+            .font(.headline)
 
             Text(scheduledTask.explanation)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Text("Score: \(Int(scheduledTask.score * 100))%")
-                .font(.caption)
-                .fontWeight(.semibold)
+            Text(
+                "Score: \(Int(scheduledTask.score * 100))%"
+            )
+            .font(.caption)
+            .fontWeight(.semibold)
         }
         .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(
+            maxWidth: .infinity,
+            alignment: .leading
+        )
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(
+            RoundedRectangle(cornerRadius: 16)
+        )
     }
 
     private var timeRangeText: String {
@@ -40,6 +66,7 @@ struct ScheduleCardView: View {
 
 #Preview {
     let userId = UUID()
+
     let task = TaskItem(
         userId: userId,
         title: "Finish CS assignment",
@@ -59,7 +86,8 @@ struct ScheduleCardView: View {
             endDate: .todayAt(hour: 12),
             score: 0.94,
             explanation: "Scheduled during a strong focus block before the deadline."
-        )
+        ),
+        onEdit: {}
     )
     .padding()
 }
